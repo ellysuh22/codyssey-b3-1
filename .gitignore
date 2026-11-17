@@ -1,0 +1,24 @@
+# 비밀정보 — 절대 기록하지 않는다
+*ed25519*
+*.pem
+*.key
+*.csv
+.env
+
+# 검토 전 캡처 (민감정보가 섞일 수 있음)
+docs/screenshots/_inbox/
+
+# Mac 자동 생성 파일
+.DS_Store
+
+# 과정 자료 (저작권)
+AI:SW 기초.pdf
+
+# 아직 올리지 않는 문서 (사용자 결정 2026-11-17)
+mission.md
+pass.md
+docs/pass/
+
+# 저장소 운영 문서 — 올리지 않음 (사용자 결정 2026-11-17)
+CLAUDE.md
+GUIDE.md
