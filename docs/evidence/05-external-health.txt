@@ -1,0 +1,23 @@
+# 외부(Mac, 서버 밖)에서 /health 호출 — 2026-11-24 10:56:25 KST
+$ curl -i http://13.124.137.81/health
+HTTP/1.1 200 OK
+Server: nginx
+Date: Tue, 24 Nov 2026 01:56:25 GMT
+Content-Type: text/plain
+Content-Length: 3
+Connection: keep-alive
+Cache-Control: no-store
+
+OK
+
+# 사용자 Mac 터미널 원문 (2026-11-24 10:58:54 KST)
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % curl -i http://13.124.137.81/health
+HTTP/1.1 200 OK
+Server: nginx
+Date: Tue, 24 Nov 2026 01:58:54 GMT
+Content-Type: text/plain
+Content-Length: 3
+Connection: keep-alive
+Cache-Control: no-store
+
+OK

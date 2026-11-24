@@ -1,0 +1,12 @@
+# 외부(Mac)에서 홈페이지 헤더 — 2026-11-24 10:56:25 KST
+$ curl -I http://13.124.137.81/
+HTTP/1.1 200 OK
+Server: nginx
+Date: Tue, 24 Nov 2026 01:56:25 GMT
+Content-Type: text/html
+Content-Length: 5398
+Last-Modified: Tue, 24 Nov 2026 01:37:10 GMT
+Connection: keep-alive
+ETag: "6b04ea46-1516"
+Accept-Ranges: bytes
+

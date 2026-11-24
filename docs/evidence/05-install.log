@@ -1,0 +1,38 @@
+# STEP 5-① SSH 접속 + Nginx 설치 (2026-11-24 KST, 사용자 터미널 출력 원문 요약)
+# 실행 위치: Mac → SSH → EC2 b3-1-web (i-0b2265faed73df750, 13.124.137.81 / 10.0.1.122)
+
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % ssh -i ~/.ssh/b3-1-ed25519 ec2-user@13.124.137.81
+
+   ,     #_
+   ~\_  ####_        Amazon Linux 2023
+  ~~  \_#####\
+  ~~     \###|
+  ~~       \#/ ___   https://aws.amazon.com/linux/amazon-linux-2023
+   ~~       V~' '->
+    ~~~         /
+      ~~._.   _/
+         _/ _/
+       _/m/'
+[ec2-user@ip-10-0-1-122 ~]$ sudo dnf install -y nginx
+Last metadata expiration check: 0:11:35 ago on Tue Nov 24 01:18:41 2026.
+Dependencies resolved.
+Installing:
+ nginx                x86_64  1:1.30.7-1.amzn2023.0.1   amazonlinux   34 k
+Installing dependencies:
+ generic-logos-httpd  noarch  18.0.0-12.amzn2023.0.3    amazonlinux   19 k
+ gperftools-libs      x86_64  2.9.1-1.amzn2023.0.3      amazonlinux  308 k
+ libunwind            x86_64  1.4.0-5.amzn2023.0.3      amazonlinux   66 k
+ nginx-core           x86_64  1:1.30.7-1.amzn2023.0.1   amazonlinux  713 k
+ nginx-filesystem     noarch  1:1.30.7-1.amzn2023.0.1   amazonlinux   10 k
+ nginx-mimetypes      noarch  2.1.49-3.amzn2023.0.3     amazonlinux   21 k
+Transaction Summary: Install 7 Packages
+Total download size: 1.1 M   (Total 8.4 MB/s)   Installed size: 3.8 M
+Transaction check succeeded. / Transaction test succeeded.
+Installed: generic-logos-httpd, gperftools-libs, libunwind, nginx, nginx-core, nginx-filesystem, nginx-mimetypes
+
+Complete!
+[ec2-user@ip-10-0-1-122 ~]$ nginx -v
+nginx version: nginx/1.30.7
+
+# 해석: amazonlinux 저장소(인터넷)에서 내려받기 성공
+#   → 서버 → 라우팅 테이블 0.0.0.0/0 → IGW → 인터넷 아웃바운드 경로 정상 (미션 §4 아웃바운드)

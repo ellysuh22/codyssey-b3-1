@@ -2,70 +2,31 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "ReadOnlyForConsole",
+      "Sid": "B31ConsoleReadSeoul",
       "Effect": "Allow",
       "Action": [
-        "ec2:Describe*",
-        "ec2:Get*"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "AmiLookupForLaunchWizard",
-      "Effect": "Allow",
-      "Action": [
-        "ssm:GetParameter",
-        "ssm:GetParameters"
-      ],
-      "Resource": "arn:aws:ssm:ap-northeast-2::parameter/aws/service/*"
-    },
-    {
-      "Sid": "NetworkComputeInSeoulOnly",
-      "Effect": "Allow",
-      "Action": [
-        "ec2:CreateVpc",
-        "ec2:DeleteVpc",
-        "ec2:ModifyVpcAttribute",
-        "ec2:CreateSubnet",
-        "ec2:DeleteSubnet",
-        "ec2:ModifySubnetAttribute",
-        "ec2:CreateInternetGateway",
-        "ec2:DeleteInternetGateway",
-        "ec2:AttachInternetGateway",
-        "ec2:DetachInternetGateway",
-        "ec2:CreateRouteTable",
-        "ec2:DeleteRouteTable",
-        "ec2:AssociateRouteTable",
-        "ec2:DisassociateRouteTable",
-        "ec2:CreateRoute",
-        "ec2:DeleteRoute",
-        "ec2:ReplaceRoute",
-        "ec2:CreateSecurityGroup",
-        "ec2:DeleteSecurityGroup",
-        "ec2:AuthorizeSecurityGroupIngress",
-        "ec2:AuthorizeSecurityGroupEgress",
-        "ec2:RevokeSecurityGroupIngress",
-        "ec2:RevokeSecurityGroupEgress",
-        "ec2:ModifySecurityGroupRules",
-        "ec2:UpdateSecurityGroupRuleDescriptionsIngress",
-        "ec2:CreateKeyPair",
-        "ec2:ImportKeyPair",
-        "ec2:DeleteKeyPair",
-        "ec2:RunInstances",
-        "ec2:StartInstances",
-        "ec2:StopInstances",
-        "ec2:RebootInstances",
-        "ec2:TerminateInstances",
-        "ec2:CreateVolume",
-        "ec2:DeleteVolume",
-        "ec2:AttachVolume",
-        "ec2:DetachVolume",
-        "ec2:AllocateAddress",
-        "ec2:ReleaseAddress",
-        "ec2:AssociateAddress",
-        "ec2:DisassociateAddress",
-        "ec2:CreateTags",
-        "ec2:DeleteTags"
+        "ec2:DescribeAccountAttributes",
+        "ec2:DescribeAddresses",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeDhcpOptions",
+        "ec2:DescribeImages",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInternetGateways",
+        "ec2:DescribeKeyPairs",
+        "ec2:DescribeNatGateways",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeSecurityGroupRules",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeTags",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeVpcBlockPublicAccessExclusions",
+        "ec2:DescribeVpcBlockPublicAccessOptions",
+        "ec2:DescribeVpcs"
       ],
       "Resource": "*",
       "Condition": {
@@ -75,13 +36,228 @@
       }
     },
     {
-      "Sid": "ManageOwnPassword",
+      "Sid": "B31CreateVpcWithTags",
       "Effect": "Allow",
       "Action": [
-        "iam:ChangePassword",
-        "iam:GetAccountPasswordPolicy"
+        "ec2:CreateVpc"
       ],
-      "Resource": "*"
+      "Resource": "arn:aws:ec2:ap-northeast-2:*:vpc/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "B3-1",
+          "aws:RequestTag/Owner": "b3-1-practice"
+        }
+      }
+    },
+    {
+      "Sid": "B31CreateNetworkPartsWithTags",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateInternetGateway",
+        "ec2:CreateRouteTable",
+        "ec2:CreateSecurityGroup",
+        "ec2:CreateSubnet",
+        "ec2:ImportKeyPair"
+      ],
+      "Resource": [
+        "arn:aws:ec2:ap-northeast-2:*:subnet/*",
+        "arn:aws:ec2:ap-northeast-2:*:route-table/*",
+        "arn:aws:ec2:ap-northeast-2:*:internet-gateway/*",
+        "arn:aws:ec2:ap-northeast-2:*:security-group/*",
+        "arn:aws:ec2:ap-northeast-2:*:key-pair/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "B3-1",
+          "aws:RequestTag/Owner": "b3-1-practice"
+        }
+      }
+    },
+    {
+      "Sid": "B31CreateOnlyInsideMyVpc",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateRouteTable",
+        "ec2:CreateSecurityGroup",
+        "ec2:CreateSubnet"
+      ],
+      "Resource": "arn:aws:ec2:ap-northeast-2:*:vpc/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "B3-1",
+          "aws:ResourceTag/Owner": "b3-1-practice"
+        }
+      }
+    },
+    {
+      "Sid": "B31RunFromAmazonAmi",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances"
+      ],
+      "Resource": "arn:aws:ec2:ap-northeast-2::image/ami-*",
+      "Condition": {
+        "StringEquals": {
+          "ec2:Owner": "amazon",
+          "ec2:RootDeviceType": "ebs"
+        }
+      }
+    },
+    {
+      "Sid": "B31RunUsingMyNetworkAndKey",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances"
+      ],
+      "Resource": [
+        "arn:aws:ec2:ap-northeast-2:*:subnet/*",
+        "arn:aws:ec2:ap-northeast-2:*:security-group/*",
+        "arn:aws:ec2:ap-northeast-2:*:key-pair/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "B3-1",
+          "aws:ResourceTag/Owner": "b3-1-practice"
+        }
+      }
+    },
+    {
+      "Sid": "B31RunMicroInstanceOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances"
+      ],
+      "Resource": "arn:aws:ec2:ap-northeast-2:*:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "B3-1",
+          "aws:RequestTag/Owner": "b3-1-practice",
+          "ec2:InstanceType": "t3.micro",
+          "ec2:Tenancy": "default"
+        }
+      }
+    },
+    {
+      "Sid": "B31RunSmallGp3Disk",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances"
+      ],
+      "Resource": "arn:aws:ec2:ap-northeast-2:*:volume/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "B3-1",
+          "aws:RequestTag/Owner": "b3-1-practice",
+          "ec2:VolumeType": "gp3"
+        },
+        "NumericGreaterThanEquals": {
+          "ec2:VolumeSize": "8"
+        },
+        "NumericLessThanEquals": {
+          "ec2:VolumeSize": "10"
+        },
+        "NumericLessThanEqualsIfExists": {
+          "ec2:VolumeIops": "3000",
+          "ec2:VolumeThroughput": "125"
+        }
+      }
+    },
+    {
+      "Sid": "B31RunTaggedNetworkInterface",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances"
+      ],
+      "Resource": "arn:aws:ec2:ap-northeast-2:*:network-interface/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "B3-1",
+          "aws:RequestTag/Owner": "b3-1-practice"
+        }
+      }
+    },
+    {
+      "Sid": "B31TagAtCreationOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateTags"
+      ],
+      "Resource": [
+        "arn:aws:ec2:ap-northeast-2:*:vpc/*",
+        "arn:aws:ec2:ap-northeast-2:*:subnet/*",
+        "arn:aws:ec2:ap-northeast-2:*:route-table/*",
+        "arn:aws:ec2:ap-northeast-2:*:internet-gateway/*",
+        "arn:aws:ec2:ap-northeast-2:*:security-group/*",
+        "arn:aws:ec2:ap-northeast-2:*:key-pair/*",
+        "arn:aws:ec2:ap-northeast-2:*:instance/*",
+        "arn:aws:ec2:ap-northeast-2:*:volume/*",
+        "arn:aws:ec2:ap-northeast-2:*:network-interface/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "B3-1",
+          "aws:RequestTag/Owner": "b3-1-practice",
+          "ec2:CreateAction": [
+            "CreateVpc",
+            "CreateSubnet",
+            "CreateRouteTable",
+            "CreateInternetGateway",
+            "CreateSecurityGroup",
+            "ImportKeyPair",
+            "RunInstances"
+          ]
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Name",
+            "Project",
+            "Owner"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "B31ChangeAndDeleteMyResourcesOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:AssociateRouteTable",
+        "ec2:AttachInternetGateway",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:CreateRoute",
+        "ec2:DeleteInternetGateway",
+        "ec2:DeleteKeyPair",
+        "ec2:DeleteRoute",
+        "ec2:DeleteRouteTable",
+        "ec2:DeleteSecurityGroup",
+        "ec2:DeleteSubnet",
+        "ec2:DeleteVolume",
+        "ec2:DeleteVpc",
+        "ec2:DescribeInstanceAttribute",
+        "ec2:DescribeVpcAttribute",
+        "ec2:DetachInternetGateway",
+        "ec2:DisassociateRouteTable",
+        "ec2:RebootInstances",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:TerminateInstances"
+      ],
+      "Resource": [
+        "arn:aws:ec2:ap-northeast-2:*:vpc/*",
+        "arn:aws:ec2:ap-northeast-2:*:subnet/*",
+        "arn:aws:ec2:ap-northeast-2:*:route-table/*",
+        "arn:aws:ec2:ap-northeast-2:*:internet-gateway/*",
+        "arn:aws:ec2:ap-northeast-2:*:security-group/*",
+        "arn:aws:ec2:ap-northeast-2:*:key-pair/*",
+        "arn:aws:ec2:ap-northeast-2:*:instance/*",
+        "arn:aws:ec2:ap-northeast-2:*:volume/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "B3-1",
+          "aws:ResourceTag/Owner": "b3-1-practice"
+        }
+      }
     }
   ]
 }

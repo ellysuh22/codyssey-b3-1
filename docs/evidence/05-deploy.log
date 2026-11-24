@@ -1,0 +1,80 @@
+# STEP 5 배포 로그 (2026-11-24 KST)
+
+## 5-② Mac → 서버 파일 전송 (Mac 터미널, 사용자 출력 원문)
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % scp -i ~/.ssh/b3-1-ed25519 site/index.html config/nginx.conf ec2-user@13.124.137.81:/tmp/
+index.html                                    100% 5398   666.6KB/s   00:00
+nginx.conf                                    100% 1158   165.1KB/s   00:00
+
+## 전송 무결성 확인 (md5, 서버 /tmp 와 Mac 원본 비교)
+98511f597ba099d842564f1c64fd24f3  /tmp/index.html   = site/index.html   ✅ 일치
+92d446e50b7a5900af7d50d027bf67fe  /tmp/nginx.conf   = config/nginx.conf ✅ 일치
+
+## 5-③ 설치 → 검사 → 실행 (서버 터미널)
+### 1차 시도 (서버 터미널, 사용자 출력 원문)
+[ec2-user@ip-10-0-1-122 ~]$ sudo install -m 644 /tmp/index.html /usr/share/nginx/html/index.html
+[ec2-user@ip-10-0-1-122 ~]$ sudo install -m 644 /tmp/nginx.conf /etc/nginx/nginx.conf
+[ec2-user@ip-10-0-1-122 ~]$ sudo nginx -t
+nginx: [warn] could not build optimal types_hash, you should increase either types_hash_max_size: 1024 or types_hash_bucket_size: 64; ignoring types_hash_bucket_size
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+[ec2-user@ip-10-0-1-122 ~]$ systemctl is-active nginx
+inactive
+[ec2-user@ip-10-0-1-122 ~]$ sudo systemctl reload nginx
+nginx.service is not active, cannot reload.
+[ec2-user@ip-10-0-1-122 ~]$ scp -i ~/.ssh/b3-1-ed25519 config/nginx.conf ec2-user@13.124.137.81:/tmp/
+scp: stat local "config/nginx.conf": No such file or directory      ← 서버 터미널에서 실행한 실수 (파일은 Mac에만 있음)
+[ec2-user@ip-10-0-1-122 ~]$ exit
+
+### 조치: config/nginx.conf 에 `types_hash_max_size 4096;` 추가 후 재전송 (Mac)
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % scp -i ~/.ssh/b3-1-ed25519 config/nginx.conf ec2-user@13.124.137.81:/tmp/
+nginx.conf                                    100% 1251   143.3KB/s   00:00
+
+### 2차 시도 (서버 터미널, 사용자 출력 원문)
+[ec2-user@ip-10-0-1-122 ~]$ sudo install -m 644 /tmp/nginx.conf /etc/nginx/nginx.conf
+[ec2-user@ip-10-0-1-122 ~]$ sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+[ec2-user@ip-10-0-1-122 ~]$ sudo systemctl enable --now nginx
+Created symlink /etc/systemd/system/multi-user.target.wants/nginx.service → /usr/lib/systemd/system/nginx.service.
+[ec2-user@ip-10-0-1-122 ~]$ systemctl is-active nginx
+active
+[ec2-user@ip-10-0-1-122 ~]$ curl -i http://localhost/health
+HTTP/1.1 200 OK
+Server: nginx
+Date: Tue, 24 Nov 2026 01:42:01 GMT
+Content-Type: text/plain
+Content-Length: 3
+Connection: keep-alive
+Cache-Control: no-store
+
+OK
+
+### 서버 안 홈페이지 확인 (사용자 출력 원문, 본문 HTML은 site/index.html 과 동일하여 생략)
+[ec2-user@ip-10-0-1-122 ~]$ curl -i http://localhost/
+HTTP/1.1 200 OK
+Server: nginx
+Date: Tue, 24 Nov 2026 01:43:37 GMT
+Content-Type: text/html
+Content-Length: 5398
+Last-Modified: Tue, 24 Nov 2026 01:37:10 GMT
+Connection: keep-alive
+ETag: "6b04ea46-1516"
+Accept-Ranges: bytes
+
+<!doctype html> … <title>B3-1 웹 서버</title> … </html>   (5398 bytes = site/index.html)
+
+### 서버 → 인터넷 아웃바운드 확인 (사용자 출력 원문, 캡처 05-example-com.png)
+[ec2-user@ip-10-0-1-122 ~]$ curl -I https://example.com
+HTTP/2 200
+date: Tue, 24 Nov 2026 01:45:27 GMT
+content-type: text/html; charset=utf-8
+server: cloudflare
+cf-cache-status: HIT
+cf-ray: a5f4bbfd4807305b-ICN
+
+### 서버 안 확인 요약 (캡처 05-server-checks.png)
+active
+localhost/ -> 200
+OK
+localhost/health -> 200
+HTTP/2 200          (https://example.com)

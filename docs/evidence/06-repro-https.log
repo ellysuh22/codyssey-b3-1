@@ -1,0 +1,44 @@
+# [재현 실험] HTTPS(443)로 접속하면 열리지 않음 — 2026-11-24 (KST)
+# 아무 설정도 바꾸지 않은 실험. 내 공인 IP는 <MY_IP>로 가림.
+
+## 증상 (Mac = 서버 밖, 사용자 터미널 원문)
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % curl -v --max-time 5 https://13.124.137.81/health
+*   Trying 13.124.137.81:443...
+* Connection timed out after 5006 milliseconds
+* Closing connection
+curl: (28) Connection timed out after 5006 milliseconds
+
+## 검증 ① 같은 서버를 http(80)로 (Mac)
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % curl -s -o /dev/null -w "http -> %{http_code}\n" --max-time 5 http://13.124.137.81/health
+http -> 200
+→ 퍼블릭 IP · IGW · 라우팅 · 서버(Nginx)는 정상. 문제는 "443이라는 문"에 한정됨
+
+## 검증 ② 포트별 연결 시도 (Mac)
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % nc -z -G 5 13.124.137.81 80
+Connection to 13.124.137.81 port 80 [tcp/http] succeeded!
+ellysuh@ellysuhui-MacBookAir-2 B3-1 % nc -z -G 5 13.124.137.81 443
+(출력 없음 — 5초 대기 후 종료: 응답 없음)
+→ "거부(refused)"가 아니라 "응답 없음(timeout)" = 길에서 패킷이 버려짐 → 방화벽(보안 그룹) 의심
+
+## 검증 ③ 보안 그룹 b3-1-web-sg 인바운드 (콘솔)
+SSH TCP 22 ← <MY_IP>/32
+HTTP TCP 80 ← 0.0.0.0/0
+→ 443 규칙 없음 (근거: ../screenshots/03-sg-inbound.png)
+
+## 검증 ④ 서버가 듣고 있는 포트 (SSH, 읽기 전용 명령)
+$ sudo ss -tlnp
+LISTEN 0 128 0.0.0.0:22  0.0.0.0:*  users:(("sshd",...))
+LISTEN 0 511 0.0.0.0:80  0.0.0.0:*  users:(("nginx",...))
+LISTEN 0 128    [::]:22     [::]:*  users:(("sshd",...))
+$ sudo grep -E "listen" /etc/nginx/nginx.conf
+        listen      80 default_server;
+→ Nginx는 80만 듣는다. 443(TLS)은 설정·인증서 자체가 없음
+
+## 결론
+원인 2겹: ① 보안 그룹에 443 인바운드 없음(먼저 차단 → timeout) ② 서버도 443을 듣지 않음(HTTPS 미구성, 보너스 과제 미수행)
+조치: 접속 주소를 http:// 로 안내 (README에 명시). 실서비스라면 도메인 + 인증서(Let's Encrypt) + SG 443 추가
+
+## 덤: 실제 인터넷 스캐너가 이미 80번을 두드리고 있음 (access.log, 2026-11-24)
+31.56.54.111   "GET / HTTP/1.1" 200 "Mozilla/5.0 (compatible; research-scan)"
+194.180.49.41  "GET / HTTP/1.1" 200 "Mozilla/5.0"
+→ 공개 포트는 몇 분 안에 전 세계에서 탐색된다 = 22·DB를 0.0.0.0/0에 열면 안 되는 이유의 실제 근거

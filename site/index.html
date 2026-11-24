@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>B3-1 웹 서버</title>
+  <style>
+    :root {
+      --bg: #e3eec2;
+      --card: #fbfdf3;
+      --ink: #2b2340;
+      --mute: #5d5870;
+      --accent: #6a3fb0;
+      --ok: #3f7d2a;
+      --ok-bg: #e4f2d4;
+      --bad: #b8432c;
+      --bad-bg: #fbefe9;
+      --wait: #8a7f3a;
+      --wait-bg: #f6f1d6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card);
+      border: 2.5px solid var(--ink);
+      border-radius: 20px;
+      padding: 28px 24px;
+    }
+    .tag {
+      font: 600 12px/1 ui-monospace, Menlo, monospace;
+      letter-spacing: .08em;
+      color: var(--accent);
+    }
+    h1 { margin: 8px 0 4px; font-size: 28px; }
+    p.lead { margin: 0 0 20px; color: var(--mute); }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 2px solid currentColor;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .status .dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: currentColor; flex: none;
+    }
+    .status[data-state="wait"] { color: var(--wait); background: var(--wait-bg); }
+    .status[data-state="ok"]   { color: var(--ok);   background: var(--ok-bg); }
+    .status[data-state="bad"]  { color: var(--bad);  background: var(--bad-bg); }
+    dl {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 6px 16px;
+      margin: 16px 0;
+      font-size: 15px;
+    }
+    dt { color: var(--mute); }
+    dd { margin: 0; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button, a.btn {
+      font: inherit;
+      font-size: 15px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 2px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    a.btn { background: transparent; color: var(--accent); }
+    footer { margin-top: 20px; font-size: 13px; color: var(--mute); }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">CODYSSEY · B3-1</span>
+    <h1>AWS EC2 웹 서버</h1>
+    <p class="lead">
+      서울 리전 VPC의 퍼블릭 서브넷에 있는 EC2에서 Nginx가 이 페이지를 보내고 있습니다.
+      아래 상태는 이 페이지가 열릴 때 <code>/health</code>를 직접 호출한 결과입니다.
+    </p>
+
+    <div id="status" class="status" data-state="wait" role="status" aria-live="polite">
+      <span class="dot"></span><span id="status-text">상태 확인 중…</span>
+    </div>
+
+    <dl>
+      <dt>요청</dt><dd>GET /health</dd>
+      <dt>HTTP 상태</dt><dd id="code">-</dd>
+      <dt>응답 본문</dt><dd id="body">-</dd>
+      <dt>응답 시간</dt><dd id="elapsed">-</dd>
+      <dt>확인 시각</dt><dd id="checked">-</dd>
+    </dl>
+
+    <div class="row">
+      <button type="button" id="recheck">다시 확인</button>
+      <a class="btn" href="/health">/health 직접 열기</a>
+    </div>
+
+    <footer>Amazon Linux 2023 · Nginx · t3.micro</footer>
+  </main>
+
+  <script>
+    (function () {
+      var box = document.getElementById("status");
+      var text = document.getElementById("status-text");
+      var fields = {
+        code: document.getElementById("code"),
+        body: document.getElementById("body"),
+        elapsed: document.getElementById("elapsed"),
+        checked: document.getElementById("checked")
+      };
+
+      function show(state, message) {
+        box.setAttribute("data-state", state);
+        text.textContent = message;
+      }
+
+      function checkHealth() {
+        show("wait", "상태 확인 중…");
+        var started = performance.now();
+
+        fetch("/health", { cache: "no-store" })
+          .then(function (res) {
+            return res.text().then(function (body) {
+              return { status: res.status, body: body.trim() };
+            });
+          })
+          .then(function (result) {
+            fields.code.textContent = String(result.status);
+            fields.body.textContent = result.body || "(비어 있음)";
+            if (result.status === 200 && result.body === "OK") {
+              show("ok", "정상 동작 중 — 200 OK");
+            } else {
+              show("bad", "응답은 왔지만 기대값(200 · OK)과 다릅니다");
+            }
+          })
+          .catch(function () {
+            fields.code.textContent = "-";
+            fields.body.textContent = "-";
+            show("bad", "/health에 연결하지 못했습니다");
+          })
+          .then(function () {
+            fields.elapsed.textContent = Math.round(performance.now() - started) + " ms";
+            fields.checked.textContent = new Date().toLocaleString("ko-KR");
+          });
+      }
+
+      document.getElementById("recheck").addEventListener("click", checkHealth);
+      checkHealth();
+    })();
+  </script>
+</body>
+</html>
