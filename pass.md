@@ -310,6 +310,8 @@ nc -vz -G 5 13.124.137.81 22
 
 네. **B 방식(`GET /health`)**으로, **서버 밖인 내 Mac에서** 호출해 **HTTP 200 + `OK`**를 받았습니다.
 
+📸 **캡처 바로 보기**: [터미널 `curl` 200 OK](docs/screenshots/05-external-health.png) · [브라우저 `/health` → OK](docs/screenshots/05-browser-health.png) · [브라우저 홈 🟢 정상 동작 중](docs/screenshots/05-browser.png)
+
 🎬 **B 방식 증명 — Mac 터미널**
 
 ```bash
