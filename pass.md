@@ -99,33 +99,16 @@ nc -z -G 5 13.124.137.81 22             # → 응답 없음 (SSH: 집 IP만 허�
 
 | 설명 순서 | 묻는 것 | 답 |
 |---|---|---|
-| **1. VPC** | 나만의 네트워크가 있나? | `b3-1-vpc` (`vpc-0510d8b165db77c1c`) · `10.0.0.0/16` · 상태 `Available` |
-| **2. Public Subnet** | VPC 안에 서버 구역이 있나? | `b3-1-subnet-public` (`subnet-006ec6df5bf1c7b2e`) · `10.0.1.0/24` · `ap-northeast-2a` · 사용 가능 IP 251 |
-| **3. Internet Gateway** | 인터넷 출입구가 VPC에 붙어 있나? | `b3-1-igw` (`igw-0c1652057dab7b750`) · 상태 **`Attached`** |
-| **4. Route Table** | `0.0.0.0/0 → IGW` 경로가 있고 서브넷에 연결됐나? | `b3-1-rtb-public` (`rtb-033c2174194a9bc48`) · `0.0.0.0/0 → igw-0c16…` 활성 · 서브넷 **명시적 연결** |
+| **1. VPC** | 나만의 네트워크가 있나? | 👉 [`b3-1-vpc`](https://ap-northeast-2.console.aws.amazon.com/vpcconsole/home?region=ap-northeast-2#VpcDetails:VpcId=vpc-0510d8b165db77c1c) (`vpc-0510d8b165db77c1c`) · `10.0.0.0/16` · 상태 `Available` |
+| **2. Public Subnet** | VPC 안에 서버 구역이 있나? | 👉 [`b3-1-subnet-public`](https://ap-northeast-2.console.aws.amazon.com/vpcconsole/home?region=ap-northeast-2#SubnetDetails:subnetId=subnet-006ec6df5bf1c7b2e) (`subnet-006ec6df5bf1c7b2e`) · `10.0.1.0/24` · `ap-northeast-2a` · 사용 가능 IP 251 |
+| **3. Internet Gateway** | 인터넷 출입구가 VPC에 붙어 있나? | 👉 [`b3-1-igw`](https://ap-northeast-2.console.aws.amazon.com/vpcconsole/home?region=ap-northeast-2#InternetGatewayDetails:internetGatewayId=igw-0c1652057dab7b750) (`igw-0c1652057dab7b750`) · 상태 **`Attached`** |
+| **4. Route Table** | `0.0.0.0/0 → IGW` 경로가 있고 서브넷에 연결됐나? | 👉 [`b3-1-rtb-public`](https://ap-northeast-2.console.aws.amazon.com/vpcconsole/home?region=ap-northeast-2#RouteTableDetails:RouteTableId=rtb-033c2174194a9bc48) (`rtb-033c2174194a9bc48`) · **라우팅** 탭 `0.0.0.0/0 → igw-0c16…` 활성 · **서브넷 연결** 탭 명시적 연결 |
 
 > 💡 "구성되어 있다" = **만들었다 + 연결했다**. 넷 중 하나라도 연결이 빠지면 외부 접속이 되지 않습니다.
 
 **② 구성 그림**
 
 ![Q1-1 · VPC · 퍼블릭 서브넷 · IGW · 라우팅 테이블](docs/pass/q1-1-vpc-network.png)
-
-```
-🌐 인터넷
- │
-🚪 Internet Gateway (b3-1-igw)
- │   └ 상태: Attached ← VPC에 붙어 있음
- │
-🏢 VPC (b3-1-vpc) · 10.0.0.0/16
- │
- ├─ 🪧 Route Table (b3-1-rtb-public)
- │    ├ 10.0.0.0/16 → local   (VPC 안은 안에서 해결)
- │    ├ 0.0.0.0/0  → IGW     (그 밖은 모두 정문으로) ★
- │    └ 연결된 서브넷: b3-1-subnet-public
- │
- └─ 🏠 Public Subnet (b3-1-subnet-public) · 10.0.1.0/24 · 서울 a 영역
-      └ 🏡 EC2가 이 안에 놓임 (퍼블릭 IP는 EC2 시작 화면에서 활성화 → 13.124.137.81)
-```
 
 4개가 **서로 연결되어야** 의미가 있다. 연결 관계를 표로 보면 이렇다.
 
@@ -152,15 +135,6 @@ nc -z -G 5 13.124.137.81 22             # → 응답 없음 (SSH: 집 IP만 허�
 | **`0.0.0.0/0`** | **"모든 주소"**라는 뜻. 다른 경로에 해당하지 않는 나머지 전부 | "그 밖의 모든 곳" | IGW로 보냄 |
 | **local** | VPC 안끼리는 **안에서 바로** 통신 | 단지 안 이동은 정문 안 거침 | 자동으로 생기는 경로 |
 | **명시적 연결** | 라우팅 테이블을 특정 서브넷에 **직접 지정**하는 것 | 이 동에 이 표지판을 세움 | 연결 안 하면 기본 표지판(밖으로 가는 길 없음)을 씀 |
-
-**④ 확인 포인트 (증빙 화면)**
-
-| 구성 요소 | 콘솔 위치 | 보여 줄 값 |
-|---|---|---|
-| VPC | VPC → VPC | `10.0.0.0/16`, 상태 `Available` |
-| Subnet | VPC → 서브넷 | `10.0.1.0/24`, `ap-northeast-2a`, VPC `b3-1-vpc` |
-| IGW | VPC → 인터넷 게이트웨이 | 상태 **`Attached`**, VPC ID 일치 |
-| Route Table | VPC → 라우팅 테이블 → 라우팅 탭 / 서브넷 연결 탭 | `0.0.0.0/0 → igw-…`, 서브넷 연결됨 |
 
 📎 근거: [README 2-2](README.md) · [resources.md](docs/evidence/resources.md) · 캡처 [01-vpc](docs/screenshots/01-vpc.png) · [01-subnet](docs/screenshots/01-subnet.png) · [02-igw-attached](docs/screenshots/02-igw-attached.png) · [02-rtb-routes](docs/screenshots/02-rtb-routes.png) · [02-rtb-subnet](docs/screenshots/02-rtb-subnet.png)
 
@@ -204,9 +178,9 @@ nc -z -G 5 13.124.137.81 22             # → 응답 없음 (SSH: 집 IP만 허�
 
 | 설명 순서 | 묻는 것 | 답 |
 |---|---|---|
-| **1. SSH 접속** | 내 Mac에서 서버에 들어갈 수 있나? | `ssh -i ~/.ssh/b3-1-ed25519 ec2-user@13.124.137.81` → `[ec2-user@ip-10-0-1-122 ~]$` |
-| **2. 웹 서버 실행** | 웹 서버 프로그램이 켜져 있나? | `systemctl is-active nginx` → `active` |
-| **3. 실제 응답** | 켜져 있을 뿐 아니라 응답도 하나? | `curl -i http://localhost/health` → `200 OK`, 본문 `OK` |
+| **1. SSH 접속** | 내 Mac에서 서버에 들어갈 수 있나? | `ssh -i ~/.ssh/b3-1-ed25519 ec2-user@13.124.137.81` → `[ec2-user@ip-10-0-1-122 ~]$` · 📸 [캡처](docs/screenshots/05-ssh-login.png) |
+| **2. 웹 서버 실행** | 웹 서버 프로그램이 켜져 있나? | `systemctl is-active nginx` → `active` · 👉 [EC2 `b3-1-web` 실행 중](https://ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#InstanceDetails:instanceId=i-0b2265faed73df750) |
+| **3. 실제 응답** | 켜져 있을 뿐 아니라 응답도 하나? | `curl -i http://localhost/health` → `200 OK`, 본문 `OK` · 👉 [밖에서 열기 /health](http://13.124.137.81/health) |
 
 > 💡 "실행 중"은 **켜져 있음(`active`)**과 **실제 응답(200)** 두 가지로 증명합니다.
 
@@ -310,8 +284,8 @@ nc: connectx to 13.124.137.81 port 22 (tcp) failed: Operation timed out
 
 | 포트 | 이름 | 용도 | 우리 규칙 |
 |---|---|---|---|
-| **80** | HTTP | 웹페이지 보기 | `0.0.0.0/0` (누구나) |
-| **22** | SSH | 서버 원격 접속 | 내 IP `/32` (나 한 명만) |
+| **80** | HTTP | 웹페이지 보기 | `0.0.0.0/0` (누구나) · 👉 [보안 그룹 인바운드](https://ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#SecurityGroup:groupId=sg-00c3b629679064cd6) |
+| **22** | SSH | 서버 원격 접속 | 내 IP `/32` (나 한 명만) · 👉 [보안 그룹 인바운드](https://ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#SecurityGroup:groupId=sg-00c3b629679064cd6) |
 | 443 | HTTPS | 암호화된 웹 | 규칙 없음 → 차단 |
 | 3306 등 | DB | 데이터베이스 | 규칙 없음 → 차단 |
 
@@ -377,10 +351,10 @@ OK                           ← ③ 고정 응답 OK
 
 | 질문이 요구하는 것 | 결과에서 확인할 곳 |
 |---|---|
-| **외부**에서 호출 | 서버가 아닌 **Mac**에서 실행 |
+| **외부**에서 호출 | 서버가 아닌 **Mac**에서 실행 · 👉 [EC2 퍼블릭 IP 확인](https://ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#InstanceDetails:instanceId=i-0b2265faed73df750) |
 | `GET /health` 호출 | 명령 주소가 `…/health` |
-| **200** | 첫 줄 `HTTP/1.1 200 OK` |
-| **고정 응답** | 마지막 줄 `OK` |
+| **200** | 첫 줄 `HTTP/1.1 200 OK` · 👉 [브라우저로 /health](http://13.124.137.81/health) |
+| **고정 응답** | 마지막 줄 `OK` · 👉 [브라우저로 홈 화면](http://13.124.137.81/) |
 
 🎤 "서버 밖인 이 Mac에서 `/health`를 호출하니 200과 OK가 왔습니다. B 방식 외부 접속 검증 완료입니다."
 
@@ -447,8 +421,8 @@ OK                           ← ③ 고정 응답 OK
 
 | 설명 순서 | 묻는 것 | 답 |
 |---|---|---|
-| **1. 체크리스트** | 어디에 기록했나? | `docs/cleanup-checklist.md` (삭제 순서 · 완료 기준 · 시각 칸). 현재 상태 **삭제 예정** |
-| **2. 지금 상태 (추적)** | 과금 위험이 남아 있나? | **EIP 0개 · NAT 0개** (라이브 확인), EBS 1개(`vol-0761089ffdc87b3bf`, EC2 루트, **종료 시 삭제 = 예**), ELB·RDS는 **권한조차 없어 만들 수 없음** |
+| **1. 체크리스트** | 어디에 기록했나? | 👉 [`docs/cleanup-checklist.md`](docs/cleanup-checklist.md) (삭제 순서 · 완료 기준 · 시각 칸). 현재 상태 **삭제 예정** |
+| **2. 지금 상태 (추적)** | 과금 위험이 남아 있나? | 👉 [**EIP 0개**](https://ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#Addresses:) · 👉 [**NAT 0개**](https://ap-northeast-2.console.aws.amazon.com/vpcconsole/home?region=ap-northeast-2#NatGateways:) (라이브 확인), 👉 [EBS 1개](https://ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#Volumes:)(`vol-0761089ffdc87b3bf`, EC2 루트, **종료 시 삭제 = 예**), ELB·RDS는 **권한조차 없어 만들 수 없음** |
 | **3. 완료 기준** | 지운 뒤 무엇으로 증명하나? | EC2 `Terminated` · 볼륨 목록 비어 있음 · EIP 목록 비어 있음 · IGW 목록에 없음 · 실습 VPC 없음 → 각각 캡처 + 시각 |
 | **4. 순서** | 왜 그 순서로 지우나? | 다른 것이 쓰고 있으면 못 지움 → **안쪽(EC2)부터 바깥(VPC)으로** |
 | **5. 언제** | 왜 아직 안 지웠나? | 평가에서 실제 접속을 보여 줘야 하므로. 모든 평가가 끝난 뒤 삭제 (중지·재시작도 하지 않음: 퍼블릭 IP가 바뀜) |
